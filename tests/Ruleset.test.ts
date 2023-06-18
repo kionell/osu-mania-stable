@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { IScoreInfo, ScoreInfo } from 'osu-classes';
+import { HitResult, IScoreInfo, ScoreInfo } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
 import { ITestAttributes, IModdedAttributes } from './Attributes';
 import { ManiaRuleset, ManiaBeatmap } from '../src';
@@ -18,7 +18,7 @@ function testRuleset(rulesetName: string): void {
   testBeatmaps(rulesetPath);
 }
 
-function testBeatmaps(rulesetPath: string): void {
+async function testBeatmaps(rulesetPath: string): Promise<void> {
   const beatmapsPath = path.resolve(rulesetPath, './Beatmaps');
   const beatmapFiles = fs.readdirSync(beatmapsPath);
 
@@ -30,7 +30,7 @@ function testBeatmaps(rulesetPath: string): void {
     const attributesData = fs.readFileSync(attributesPath).toString();
     const attributes: IModdedAttributes = JSON.parse(attributesData);
 
-    const decoded = decoder.decodeFromPath(beatmapPath, false);
+    const decoded = await decoder.decodeFromPath(beatmapPath, false);
 
     for (const acronym in attributes) {
       const mods = ruleset.createModCombination(acronym);
@@ -77,12 +77,13 @@ function testBeatmap(beatmap: ManiaBeatmap, data: ITestAttributes): void {
 }
 
 function simulateScore(beatmap: ManiaBeatmap): IScoreInfo {
-  return new ScoreInfo({
+  const score = new ScoreInfo({
     maxCombo: beatmap.maxCombo,
     mods: beatmap.mods,
     accuracy: 1,
-    statistics: {
-      perfect: beatmap.hitObjects.length,
-    },
   });
+
+  score.statistics.set(HitResult.Perfect, beatmap.hitObjects.length);
+
+  return score;
 }
